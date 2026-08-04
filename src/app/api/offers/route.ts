@@ -23,17 +23,11 @@ export async function GET(request: Request) {
     try {
       data = await getOffersFromSupabase()
     } catch (e) {
-      console.warn("Supabase fetch failed, falling back to Google Sheets:", e)
-    }
-
-    // If Supabase table has no rows yet, fetch initial rows from Google Sheets / Mock
-    if (!data || data.length === 0) {
-      const sheetsResult = await fetchOffersFromSheet()
-      data = sheetsResult.data
-      isMockData = sheetsResult.isMock
+      console.error("Supabase fetch error:", e)
     }
 
     if (filterStatus && filterStatus !== "all") {
+
       data = data.filter(
         (offer) => offer.status?.toLowerCase() === filterStatus.toLowerCase()
       )
