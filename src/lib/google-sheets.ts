@@ -56,7 +56,7 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
     return { data, isMock: false }
   } catch (error) {
     console.error("❌ Error fetching from Google Sheets:", error)
-    // Return mock data on failure to ensure UI stays up
-    return { data: mockData, isMock: true }
+    return { data: [], isMock: false }
   }
 }
+
