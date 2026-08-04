@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { ApiResponse } from "@/lib/validations"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { ApiResponse, Offer } from "@/lib/validations"
 
 interface UseOffersParams {
   status?: string
@@ -7,7 +7,9 @@ interface UseOffersParams {
 }
 
 export function useOffers(params?: UseOffersParams) {
-  return useQuery<ApiResponse, Error>({
+  const queryClient = useQueryClient()
+
+  const offersQuery = useQuery<ApiResponse, Error>({
     queryKey: ["offers", params],
     queryFn: async () => {
       const searchParams = new URLSearchParams()
@@ -20,7 +22,64 @@ export function useOffers(params?: UseOffersParams) {
       }
       return response.json()
     },
-    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
-    staleTime: 60 * 1000,           // Consider data fresh for 1 minute
+    refetchInterval: 10 * 1000, // Refresh every 10s
+    staleTime: 5 * 1000,
   })
+
+  // Add offer mutation
+  const addOfferMutation = useMutation({
+    mutationFn: async (newOffer: Omit<Offer, "id">) => {
+      const res = await fetch("/api/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newOffer),
+      })
+      if (!res.ok) throw new Error("Failed to add offer")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["offers"] })
+    },
+  })
+
+  // Update offer mutation
+  const updateOfferMutation = useMutation({
+    mutationFn: async (updates: Partial<Offer> & { id: string }) => {
+      const res = await fetch("/api/offers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      })
+      if (!res.ok) throw new Error("Failed to update offer")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["offers"] })
+    },
+  })
+
+  // Delete offer mutation
+  const deleteOfferMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/offers?id=${id}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to delete offer")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["offers"] })
+    },
+  })
+
+  return {
+    ...offersQuery,
+    addOffer: addOfferMutation.mutateAsync,
+    isAdding: addOfferMutation.isPending,
+    updateOffer: updateOfferMutation.mutateAsync,
+    isUpdating: updateOfferMutation.isPending,
+    deleteOffer: deleteOfferMutation.mutateAsync,
+    isDeleting: deleteOfferMutation.isPending,
+  }
 }
+

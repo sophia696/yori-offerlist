@@ -1,49 +1,101 @@
 import { NextResponse } from "next/server"
-import { fetchOffersFromSheet } from "@/lib/google-sheets"
-import { apiResponseSchema } from "@/lib/validations"
+import {
+  getOffersFromSupabase,
+  addOfferToSupabase,
+  updateOfferInSupabase,
+  deleteOfferFromSupabase,
+} from "@/lib/offers-service"
 
+// 1. GET ALL OFFERS (FROM SUPABASE)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const filterStatus = searchParams.get("status")
     const filterGeo = searchParams.get("geo")
 
-    // Fetch data (from Google Sheets or mock fallback)
-    const { data, isMock } = await fetchOffersFromSheet()
+    let data = await getOffersFromSupabase()
 
-    // Apply optional filtering
-    let filteredData = data
     if (filterStatus && filterStatus !== "all") {
-      filteredData = filteredData.filter(
+      data = data.filter(
         (offer) => offer.status?.toLowerCase() === filterStatus.toLowerCase()
       )
     }
     if (filterGeo) {
-      filteredData = filteredData.filter(
+      data = data.filter(
         (offer) => offer.geo.toLowerCase().includes(filterGeo.toLowerCase())
       )
     }
 
-    // Validate and structure the response using Zod
-    const responsePayload = {
-      data: filteredData,
+    return NextResponse.json({
+      data,
       updatedAt: new Date().toISOString(),
-      isMockData: isMock,
-    }
-
-    const validatedResponse = apiResponseSchema.parse(responsePayload)
-
-    // Send with minimal caching headers so TanStack query can manage the cache
-    return NextResponse.json(validatedResponse, {
-      headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59",
-      },
+      isMockData: false,
     })
-  } catch (error) {
-    console.error("API Error in /api/offers:", error)
+  } catch (error: any) {
+    console.error("API GET Error in /api/offers:", error)
     return NextResponse.json(
-      { error: "Failed to fetch offers data" },
+      { error: error.message || "Failed to fetch offers from Supabase" },
       { status: 500 }
     )
   }
 }
+
+// 2. CREATE NEW OFFER
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    if (!body.campaign) {
+      return NextResponse.json({ error: "Campaign name is required" }, { status: 400 })
+    }
+
+    const newOffer = await addOfferToSupabase(body)
+    return NextResponse.json({ success: true, data: newOffer }, { status: 201 })
+  } catch (error: any) {
+    console.error("API POST Error in /api/offers:", error)
+    return NextResponse.json(
+      { error: error.message || "Failed to create offer" },
+      { status: 500 }
+    )
+  }
+}
+
+// 3. UPDATE OFFER
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+    if (!id) {
+      return NextResponse.json({ error: "Offer ID is required for update" }, { status: 400 })
+    }
+
+    const updated = await updateOfferInSupabase(id, updates)
+    return NextResponse.json({ success: true, data: updated })
+  } catch (error: any) {
+    console.error("API PUT Error in /api/offers:", error)
+    return NextResponse.json(
+      { error: error.message || "Failed to update offer" },
+      { status: 500 }
+    )
+  }
+}
+
+// 4. DELETE OFFER
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+    if (!id) {
+      return NextResponse.json({ error: "Offer ID is required for deletion" }, { status: 400 })
+    }
+
+    await deleteOfferFromSupabase(id)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error("API DELETE Error in /api/offers:", error)
+    return NextResponse.json(
+      { error: error.message || "Failed to delete offer" },
+      { status: 500 }
+    )
+  }
+}
+
