@@ -72,19 +72,22 @@ export function OfferFormModal({ mode, initialData, onSubmit, onDelete }: OfferF
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {mode === "create" ? (
-          <Button size="sm" className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-sm">
-            <Plus className="h-3.5 w-3.5" />
-            Add Offer
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" className="h-7 text-xs px-2.5 gap-1.5 border-border/50 bg-muted/20 hover:bg-muted/40 text-foreground">
-            <Edit2 className="h-3 w-3 text-primary" />
-            Edit
-          </Button>
-        )}
-      </SheetTrigger>
+      <SheetTrigger
+        render={
+          mode === "create" ? (
+            <Button size="sm" className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-sm">
+              <Plus className="h-3.5 w-3.5" />
+              Add Offer
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2.5 gap-1.5 border-border/50 bg-muted/20 hover:bg-muted/40 text-foreground">
+              <Edit2 className="h-3 w-3 text-primary" />
+              Edit
+            </Button>
+          )
+        }
+      />
+
       <SheetContent className="sm:max-w-lg bg-card border-border/40 overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-border/30">
           <SheetTitle className="text-lg font-bold text-foreground">
