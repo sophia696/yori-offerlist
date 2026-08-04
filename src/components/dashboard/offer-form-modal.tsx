@@ -128,8 +128,9 @@ export function OfferFormModal({ mode, initialData, onSubmit, onDelete }: OfferF
               </label>
               <Select
                 value={formData.status}
-                onValueChange={(val) => setFormData({ ...formData, status: val })}
+                onValueChange={(val) => setFormData({ ...formData, status: val || "Active" })}
               >
+
                 <SelectTrigger className="bg-muted/20 border-border/50 text-sm">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
