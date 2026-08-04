@@ -5,15 +5,30 @@ import {
   updateOfferInSupabase,
   deleteOfferFromSupabase,
 } from "@/lib/offers-service"
+import { fetchOffersFromSheet } from "@/lib/google-sheets"
 
-// 1. GET ALL OFFERS (FROM SUPABASE)
+// 1. GET ALL OFFERS (FROM SUPABASE WITH GOOGLE SHEETS FALLBACK IF EMPTY)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const filterStatus = searchParams.get("status")
     const filterGeo = searchParams.get("geo")
 
-    let data = await getOffersFromSupabase()
+    let data = []
+    let isMockData = false
+
+    try {
+      data = await getOffersFromSupabase()
+    } catch (e) {
+      console.warn("Supabase fetch failed, falling back to Google Sheets:", e)
+    }
+
+    // If Supabase table has no rows yet, fetch initial rows from Google Sheets / Mock
+    if (!data || data.length === 0) {
+      const sheetsResult = await fetchOffersFromSheet()
+      data = sheetsResult.data
+      isMockData = sheetsResult.isMock
+    }
 
     if (filterStatus && filterStatus !== "all") {
       data = data.filter(
@@ -29,16 +44,17 @@ export async function GET(request: Request) {
     return NextResponse.json({
       data,
       updatedAt: new Date().toISOString(),
-      isMockData: false,
+      isMockData,
     })
   } catch (error: any) {
     console.error("API GET Error in /api/offers:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to fetch offers from Supabase" },
+      { error: error.message || "Failed to fetch offers" },
       { status: 500 }
     )
   }
 }
+
 
 // 2. CREATE NEW OFFER
 export async function POST(request: Request) {
