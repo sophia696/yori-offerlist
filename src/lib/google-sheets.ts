@@ -37,34 +37,37 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
       range: `'${firstSheetTitle}'!A1:Z1000`,
     })
 
-    let rows = response.data.values || []
+    // Find header row index (e.g. row containing "App Name" or "S no." or "Campaign")
+    let headerRowIdx = rows.findIndex((row: string[]) => 
+      row.some((cell: any) => String(cell).toLowerCase().includes("app name") || String(cell).toLowerCase().includes("s no") || String(cell).toLowerCase().includes("campaign"))
+    )
 
-    console.log(`Fetched ${rows.length} raw rows from tab '${firstSheetTitle}'`)
-
-    // If first row looks like headers (e.g. contains 'campaign' or 'model'), skip header row
-    if (rows.length > 0 && (rows[0][0]?.toLowerCase().includes("campaign") || rows[0][0]?.toLowerCase().includes("offer"))) {
-      rows = rows.slice(1)
+    if (headerRowIdx !== -1) {
+      rows = rows.slice(headerRowIdx + 1)
     }
 
     if (!rows || rows.length === 0) {
-      throw new Error(`Google Sheets API connected to sheet tab '${firstSheetTitle}', but found 0 data rows in A1:Z1000 range.`)
+      throw new Error(`Google Sheets API connected to sheet tab '${firstSheetTitle}', but found 0 data rows in A:Z range.`)
     }
 
-
-
-    // Map raw array rows to structured objects
-    const data: Offer[] = rows.map((row) => ({
-      campaign: row[0] || "",
-      model: row[1] || "",
-      geo: row[2] || "",
-      status: row[3] || "Active",
-      previewUrl: row[4] || "",
-      poEvent: row[5] || "",
-      flow: row[6] || "",
-      billing: row[7] || "",
-      os: row[8] || "",
-      po: row[9] || "",
-    }))
+    // Map raw array rows to structured objects matching your new sheet columns:
+    // Row layout: [0]=S no, [1]=App Name (Campaign), [2]=Preview URL, [3]=OS, [4]=Geo, [5]=Payout, etc.
+    const data: Offer[] = rows
+      .filter((row: any[]) => row[1] || row[0])
+      .map((row: any[]) => {
+        const campaign = row[1] || row[0] || ""
+        return {
+          campaign: String(campaign).trim(),
+          previewUrl: row[2] ? String(row[2]).trim() : "",
+          os: row[3] ? String(row[3]).trim() : "",
+          geo: row[4] ? String(row[4]).trim() : "",
+          po: row[5] ? String(row[5]).trim() : "$0.00",
+          model: row[6] ? String(row[6]).trim() : "CPA",
+          status: row[7] ? String(row[7]).trim() : "Active",
+          flow: row[8] ? String(row[8]).trim() : "",
+          billing: row[9] ? String(row[9]).trim() : "",
+        }
+      })
 
     return { data, isMock: false }
   } catch (error) {
@@ -72,4 +75,5 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
     return { data: [], isMock: false }
   }
 }
+
 
