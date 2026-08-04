@@ -9,7 +9,8 @@ export async function POST() {
     const sheetId = process.env.GOOGLE_SHEET_ID ? process.env.GOOGLE_SHEET_ID : "Missing"
 
     // 1. Fetch live rows from Google Sheets
-    const { data: sheetOffers } = await fetchOffersFromSheet()
+    const sheetResult = await fetchOffersFromSheet()
+    const sheetOffers = sheetResult.data
 
     if (!sheetOffers || sheetOffers.length === 0) {
       return NextResponse.json({ 
@@ -17,6 +18,7 @@ export async function POST() {
         count: 0 
       })
     }
+
 
 
     let syncedCount = 0

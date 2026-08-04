@@ -73,10 +73,11 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
       })
 
     return { data, isMock: false }
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error fetching from Google Sheets:", error)
-    return { data: [], isMock: false }
+    throw new Error(`Google Sheets Connection Error: ${error.message || error}`)
   }
 }
+
 
 
