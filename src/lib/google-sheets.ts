@@ -4,14 +4,20 @@ import { Offer } from "./validations"
 export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: boolean }> {
   try {
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL
-    // Parse private key correctly handling escaped newlines
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
+    let privateKey = process.env.GOOGLE_PRIVATE_KEY
     const sheetId = process.env.GOOGLE_SHEET_ID
 
     if (!clientEmail || !privateKey || !sheetId) {
-      console.warn("⚠️ Google Sheets credentials not fully provided.")
-      return { data: [], isMock: false }
+      console.warn("⚠️ Missing Google Sheets environment variables in Vercel.")
+      throw new Error("Google Sheets credentials (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_SHEET_ID) are missing in Vercel Environment Variables.")
     }
+
+    // Clean private key formatting for Vercel deployment
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.substring(1, privateKey.length - 1)
+    }
+    privateKey = privateKey.replace(/\\n/g, "\n")
+
 
 
     const auth = new google.auth.JWT({
