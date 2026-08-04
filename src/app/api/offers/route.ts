@@ -6,6 +6,8 @@ import {
   deleteOfferFromSupabase,
 } from "@/lib/offers-service"
 import { fetchOffersFromSheet } from "@/lib/google-sheets"
+import { Offer } from "@/lib/validations"
+
 
 // 1. GET ALL OFFERS (FROM SUPABASE WITH GOOGLE SHEETS FALLBACK IF EMPTY)
 export async function GET(request: Request) {
@@ -14,8 +16,9 @@ export async function GET(request: Request) {
     const filterStatus = searchParams.get("status")
     const filterGeo = searchParams.get("geo")
 
-    let data = []
+    let data: Offer[] = []
     let isMockData = false
+
 
     try {
       data = await getOffersFromSupabase()
