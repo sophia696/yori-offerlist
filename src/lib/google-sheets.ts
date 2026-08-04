@@ -12,19 +12,37 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
       throw new Error("Google Sheets credentials (GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_SHEET_ID) are missing in Vercel Environment Variables.")
     }
 
-    // Clean private key formatting for Vercel deployment
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.substring(1, privateKey.length - 1)
+    // Robust private key formatting to handle quotes, raw newlines, and escaped newlines safely
+    let formattedKey = privateKey.trim()
+    
+    // Remove wrapping quotes if present
+    if (formattedKey.startsWith('"') && formattedKey.endsWith('"')) {
+      formattedKey = formattedKey.slice(1, -1)
     }
-    privateKey = privateKey.replace(/\\n/g, "\n")
+    if (formattedKey.startsWith("'") && formattedKey.endsWith("'")) {
+      formattedKey = formattedKey.slice(1, -1)
+    }
+
+    // Replace literal '\n' characters with actual newlines
+    formattedKey = formattedKey.replace(/\\n/g, "\n")
+
+    // Double-check correct PEM formatting header/footer
+    if (!formattedKey.includes("-----BEGIN PRIVATE KEY-----")) {
+      formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}`
+    }
+    if (!formattedKey.includes("-----END PRIVATE KEY-----")) {
+      formattedKey = `${formattedKey}\n-----END PRIVATE KEY-----`
+    }
+
 
 
 
     const auth = new google.auth.JWT({
       email: clientEmail,
-      key: privateKey,
+      key: formattedKey,
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     })
+
 
     const sheets = google.sheets({ version: "v4", auth })
 
