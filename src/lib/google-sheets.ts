@@ -39,14 +39,17 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
 
     let rows = response.data.values || []
 
+    console.log(`Fetched ${rows.length} raw rows from tab '${firstSheetTitle}'`)
+
     // If first row looks like headers (e.g. contains 'campaign' or 'model'), skip header row
     if (rows.length > 0 && (rows[0][0]?.toLowerCase().includes("campaign") || rows[0][0]?.toLowerCase().includes("offer"))) {
       rows = rows.slice(1)
     }
 
     if (!rows || rows.length === 0) {
-      return { data: [], isMock: false }
+      throw new Error(`Google Sheets API connected to sheet tab '${firstSheetTitle}', but found 0 data rows in A1:Z1000 range.`)
     }
+
 
 
     // Map raw array rows to structured objects
