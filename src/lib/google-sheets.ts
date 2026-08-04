@@ -27,17 +27,27 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
     })
 
     const sheets = google.sheets({ version: "v4", auth })
-    
-    // Use generic range A2:J1000 to query the first visible sheet regardless of its tab name
+
+    // Get spreadsheet metadata to read the exact first sheet tab name
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId })
+    const firstSheetTitle = meta.data.sheets?.[0]?.properties?.title || "Sheet1"
+
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "A2:J1000", // Skip header row
+      range: `'${firstSheetTitle}'!A1:Z1000`,
     })
 
-    const rows = response.data.values
+    let rows = response.data.values || []
+
+    // If first row looks like headers (e.g. contains 'campaign' or 'model'), skip header row
+    if (rows.length > 0 && (rows[0][0]?.toLowerCase().includes("campaign") || rows[0][0]?.toLowerCase().includes("offer"))) {
+      rows = rows.slice(1)
+    }
+
     if (!rows || rows.length === 0) {
       return { data: [], isMock: false }
     }
+
 
     // Map raw array rows to structured objects
     const data: Offer[] = rows.map((row) => ({
