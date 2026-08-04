@@ -4,12 +4,20 @@ import { addOfferToSupabase } from "@/lib/offers-service"
 
 export async function POST() {
   try {
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL ? "Present" : "Missing"
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY ? "Present" : "Missing"
+    const sheetId = process.env.GOOGLE_SHEET_ID ? process.env.GOOGLE_SHEET_ID : "Missing"
+
     // 1. Fetch live rows from Google Sheets
     const { data: sheetOffers } = await fetchOffersFromSheet()
 
     if (!sheetOffers || sheetOffers.length === 0) {
-      return NextResponse.json({ message: "No rows found in Google Sheet to sync", count: 0 })
+      return NextResponse.json({ 
+        message: `No rows found in Google Sheet. (SheetID: ${sheetId}, ClientEmail: ${clientEmail}, PrivateKey: ${privateKey})`, 
+        count: 0 
+      })
     }
+
 
     let syncedCount = 0
 
