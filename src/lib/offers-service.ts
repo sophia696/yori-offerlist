@@ -6,7 +6,8 @@ export async function getOffersFromSupabase(): Promise<Offer[]> {
   const { data, error } = await supabase
     .from('offers')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
+
 
 
   if (error) {
