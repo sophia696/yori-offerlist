@@ -203,14 +203,18 @@ function DashboardContent() {
       }
     }
     const handleOpenCopilot = () => setIsCopilotOpen(true)
+    const handleAiOfferAdded = () => refetch()
 
     window.addEventListener("keydown", handleKeyDown)
     window.addEventListener("open-ai-copilot", handleOpenCopilot)
+    window.addEventListener("offer-added-by-ai", handleAiOfferAdded)
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("open-ai-copilot", handleOpenCopilot)
+      window.removeEventListener("offer-added-by-ai", handleAiOfferAdded)
     }
-  }, [])
+  }, [refetch])
+
 
   const analyticsData = computeAnalytics(offers)
   const pageSize = compactMode ? PAGE_SIZE_COMPACT : PAGE_SIZE_DEFAULT

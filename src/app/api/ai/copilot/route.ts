@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { addOfferToSupabase } from "@/lib/offers-service"
 
 export async function POST(request: Request) {
   try {
@@ -15,41 +15,37 @@ export async function POST(request: Request) {
       : "No live offer list provided."
 
     const systemPrompt = `You are Yori Offers AI — an elite Affiliate Media Buyer & Campaign Intelligence Assistant.
-You help affiliate marketers and media buyers analyze ad offers, payout models, GEO targets, and conversion flows.
+You help affiliate marketers analyze offer emails, campaign descriptions, payout models, GEO targets, and conversion flows.
 
 Here is the current live list of active campaigns:
 ${offersContext}
 
-Guidelines:
-1. Provide concise, direct, actionable insights tailored for performance marketing.
-2. If asked for recommendations, highlight high payouts, low friction flows, or top converting GEOs.
-3. Be professional, clear, and structured (use bullet points or key stats).
-4. If GROQ_API_KEY is active, answer with real-time analysis of the offers provided.`
+CRITICAL FEATURE - AUTOMATIC OFFER CREATION:
+If the user pastes an offer email, offer details, or asks you to add an offer (e.g. "Add this offer: ...", "Parse this email: ..."), you MUST analyze the text and return a special JSON block AT THE VERY END of your response in this EXACT format:
+
+<<<ADD_OFFER_JSON
+{
+  "campaign": "Extracted Campaign Name",
+  "model": "CPA / CPL / RevShare",
+  "geo": "Extracted GEO codes e.g. US, DE, IN",
+  "po": "$15.00",
+  "status": "Active",
+  "billing": "CRM / Net15",
+  "os": "Android / iOS",
+  "flow": "Brief description of conversion flow",
+  "previewUrl": "URL if available or empty"
+}
+ADD_OFFER_JSON>>>
+
+Before the JSON block, explain your analysis clearly to the user, summarizing the key details found in their email. If the text is NOT an offer email or request to add an offer, answer normally without the JSON block.`
 
     if (!apiKey) {
-      // Intelligent mock fallback response if GROQ_API_KEY is not set yet
       const lastUserMsg = messages[messages.length - 1]?.content || ""
-      let reply = "I am ready to analyze your campaigns!"
-      
-      const lower = lastUserMsg.toLowerCase()
-      if (lower.includes("payout") || lower.includes("high") || lower.includes("10") || lower.includes("top")) {
-        const highPayouts = offers?.filter((o: any) => {
-          const po = parseFloat((o.po || "").replace(/[^0-9.]/g, ""))
-          return po >= 10
-        }) || []
-        reply = `Found ${highPayouts.length} high-payout offers ($10+):\n\n` + 
-          highPayouts.slice(0, 5).map((o: any) => `• **${o.campaign}** — ${o.po} (${o.geo}) [${o.model}]`).join("\n") +
-          `\n\n*(Tip: Add your \`GROQ_API_KEY\` to \`.env.local\` for live deep-reasoning AI answers!)*`
-      } else if (lower.includes("geo") || lower.includes("latam") || lower.includes("us") || lower.includes("country")) {
-        reply = `Analyzing geographic distribution...\n\nTop active targets in your dataset include US, CA, DE, UK, and BR. Offers in Tier 1 GEOs (US/UK/DE) average higher payouts ($15+ CPA), while Tier 2/3 GEOs offer higher volume potential on Mobile CPL flows.`
-      } else {
-        reply = `I evaluated your ${offers?.length || 0} active offers. Key recommendations:\n\n1. **Focus on Mobile CPL/SOI**: Highest conversion velocity.\n2. **Targeting**: Ensure OS filters match campaign specs (e.g. Android 10+ for app install offers).\n3. **Scaling**: Consider scaling top performing GEOs using Push or Native ads.\n\n*(Connect your \`GROQ_API_KEY\` in \`.env.local\` to unlock full Groq Llama-3 70B AI responses)*`
-      }
-
-      return NextResponse.json({ reply })
+      return NextResponse.json({ 
+        reply: "Please add your GROQ_API_KEY to .env.local to enable automatic offer email analysis and database insertion!" 
+      })
     }
 
-    // Call Groq API via standard OpenAI compatibility endpoint
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -62,21 +58,38 @@ Guidelines:
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        temperature: 0.7,
-        max_tokens: 1024,
+        temperature: 0.3,
+        max_tokens: 1200,
       }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Groq API error:", errorText)
       throw new Error(`Groq API returned ${response.status}: ${errorText}`)
     }
 
     const data = await response.json()
-    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response."
+    let reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process your request."
 
-    return NextResponse.json({ reply })
+    let addedOffer = null
+
+    // Check if AI generated an offer creation block
+    const jsonMatch = reply.match(/<<<ADD_OFFER_JSON\s*([\s\S]*?)\s*ADD_OFFER_JSON>>>/)
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        const parsedOffer = JSON.parse(jsonMatch[1])
+        if (parsedOffer.campaign) {
+          addedOffer = await addOfferToSupabase(parsedOffer)
+          // Clean the hidden JSON block from user display and append confirmation
+          reply = reply.replace(/<<<ADD_OFFER_JSON[\s\S]*?ADD_OFFER_JSON>>>/, "").trim()
+          reply += `\n\n✅ **Successfully added "${parsedOffer.campaign}" to Supabase Database!**`
+        }
+      } catch (err) {
+        console.error("Failed to parse or insert AI offer:", err)
+      }
+    }
+
+    return NextResponse.json({ reply, addedOffer })
   } catch (error: any) {
     console.error("Error in AI Copilot route:", error)
     return NextResponse.json(
@@ -85,3 +98,4 @@ Guidelines:
     )
   }
 }
+

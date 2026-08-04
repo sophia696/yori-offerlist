@@ -107,7 +107,13 @@ export function AiCopilotDrawer({ isOpen, onClose, offers }: AiCopilotDrawerProp
 
       const data = await res.json()
       setMessages([...newMessages, { role: "assistant", content: data.reply }])
+
+      // If AI automatically added an offer to Supabase, trigger React Query refresh
+      if (data.addedOffer) {
+        window.dispatchEvent(new CustomEvent("offer-added-by-ai"))
+      }
     } catch (err: any) {
+
       setMessages([
         ...newMessages,
         { role: "assistant", content: "❌ Sorry, I encountered an error communicating with the AI service." }
