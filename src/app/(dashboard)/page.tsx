@@ -448,12 +448,17 @@ function DashboardContent() {
                 try {
                   const res = await fetch("/api/offers/sync", { method: "POST" })
                   const resData = await res.json()
-                  alert(resData.message || resData.error || "Sync completed!")
-                  refetch()
-                } catch (e) {
-                  alert("Failed to sync Google Sheet rows")
+                  if (!res.ok) {
+                    alert(`Sync Error: ${resData.error || resData.details || res.statusText}`)
+                  } else {
+                    alert(resData.message || "Sync completed successfully!")
+                    refetch()
+                  }
+                } catch (e: any) {
+                  alert(`Sync Request Failed: ${e.message || e}`)
                 }
               }}
+
             >
               <RefreshCw className="h-3.5 w-3.5 text-emerald-500" />
               Sync Google Sheet
