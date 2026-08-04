@@ -37,6 +37,8 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
       range: `'${firstSheetTitle}'!A1:Z1000`,
     })
 
+    let rows = response.data.values || []
+
     // Find header row index (e.g. row containing "App Name" or "S no." or "Campaign")
     let headerRowIdx = rows.findIndex((row: string[]) => 
       row.some((cell: any) => String(cell).toLowerCase().includes("app name") || String(cell).toLowerCase().includes("s no") || String(cell).toLowerCase().includes("campaign"))
@@ -45,6 +47,7 @@ export async function fetchOffersFromSheet(): Promise<{ data: Offer[], isMock: b
     if (headerRowIdx !== -1) {
       rows = rows.slice(headerRowIdx + 1)
     }
+
 
     if (!rows || rows.length === 0) {
       throw new Error(`Google Sheets API connected to sheet tab '${firstSheetTitle}', but found 0 data rows in A:Z range.`)
