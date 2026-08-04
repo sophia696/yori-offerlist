@@ -54,6 +54,8 @@ import { OfferTableSkeleton } from "@/components/dashboard/offer-table-skeleton"
 import { Offer } from "@/lib/validations"
 import { motion, AnimatePresence } from "framer-motion"
 import { AiCopilotDrawer } from "@/components/dashboard/ai-copilot-drawer"
+import { OfferFormModal } from "@/components/dashboard/offer-form-modal"
+
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -162,8 +164,9 @@ function DetailRow({
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: offersData, isLoading, isFetching, refetch } = useOffers()
+  const { data: offersData, isLoading, isFetching, refetch, addOffer, updateOffer, deleteOffer } = useOffers()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
+
 
   const offers = offersData?.data ?? []
 
@@ -427,6 +430,12 @@ function DashboardContent() {
                 Updated {lastUpdatedText}
               </span>
             )}
+            <OfferFormModal
+              mode="create"
+              onSubmit={async (data) => {
+                await addOffer(data)
+              }}
+            />
             <Button
               variant="outline"
               size="sm"
@@ -461,6 +470,7 @@ function DashboardContent() {
               {isFetching ? "Refreshing…" : "Refresh"}
             </Button>
           </div>
+
         </div>
       </div>
 
@@ -723,6 +733,17 @@ function DashboardContent() {
             </h2>
             {selectedOffer && (
               <div className="flex items-center gap-1">
+                <OfferFormModal
+                  mode="edit"
+                  initialData={selectedOffer}
+                  onSubmit={async (data) => {
+                    await updateOffer(data)
+                  }}
+                  onDelete={async (id) => {
+                    await deleteOffer(id)
+                    setSelectedCampaign(null)
+                  }}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -750,6 +771,7 @@ function DashboardContent() {
                 </Button>
               </div>
             )}
+
           </div>
 
           <CardContent className="p-4 flex flex-col gap-4 flex-1 overflow-hidden">
