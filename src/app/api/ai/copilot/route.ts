@@ -1,4 +1,6 @@
+import { NextResponse } from "next/server"
 import { addOfferToSupabase } from "@/lib/offers-service"
+
 
 export async function POST(request: Request) {
   try {
