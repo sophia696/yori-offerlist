@@ -1,13 +1,13 @@
 import { createClient } from './supabase'
 import { Offer } from './validations'
 
-const supabase = createClient()
-
 export async function getOffersFromSupabase(): Promise<Offer[]> {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('offers')
     .select('*')
     .order('created_at', { ascending: false })
+
 
   if (error) {
     console.error('Supabase fetch error:', error)
@@ -30,6 +30,7 @@ export async function getOffersFromSupabase(): Promise<Offer[]> {
 }
 
 export async function addOfferToSupabase(offer: Omit<Offer, 'id'>) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('offers')
     .insert([
@@ -56,6 +57,7 @@ export async function addOfferToSupabase(offer: Omit<Offer, 'id'>) {
 }
 
 export async function updateOfferInSupabase(id: string, updates: Partial<Offer>) {
+  const supabase = createClient()
   const payload: Record<string, any> = {
     updated_at: new Date().toISOString(),
   }
@@ -85,6 +87,7 @@ export async function updateOfferInSupabase(id: string, updates: Partial<Offer>)
 }
 
 export async function deleteOfferFromSupabase(id: string) {
+  const supabase = createClient()
   const { error } = await supabase
     .from('offers')
     .delete()
@@ -96,3 +99,4 @@ export async function deleteOfferFromSupabase(id: string) {
   }
   return true
 }
+
