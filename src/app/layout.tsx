@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Outfit, Roboto_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers/query-provider";
 
-const fontSans = Outfit({
+const fontSans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const fontMono = Roboto_Mono({
+const fontMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
+
+
 
 export const metadata: Metadata = {
   title: "Offers | Yori Labs",
