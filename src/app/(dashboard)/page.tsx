@@ -443,6 +443,24 @@ function DashboardContent() {
             <Button
               variant="outline"
               size="sm"
+              className="h-8 text-xs border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 gap-1.5 font-medium"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/offers/sync", { method: "POST" })
+                  const resData = await res.json()
+                  alert(resData.message || resData.error || "Sync completed!")
+                  refetch()
+                } catch (e) {
+                  alert("Failed to sync Google Sheet rows")
+                }
+              }}
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-emerald-500" />
+              Sync Google Sheet
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               className="h-8 text-xs border-border/50 bg-muted/20 hover:bg-muted/40 gap-1.5"
               onClick={handleExportCSV}
               disabled={filteredOffers.length === 0}
@@ -450,6 +468,7 @@ function DashboardContent() {
               <Download className="h-3.5 w-3.5 text-primary" />
               Export CSV
             </Button>
+
             <Button
               variant="outline"
               size="sm"
